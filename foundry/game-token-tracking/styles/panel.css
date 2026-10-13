@@ -1,0 +1,9 @@
+.gtt-launcher {position:fixed;right:18px;bottom:18px;width:auto;z-index:100;}
+.gtt-panel {position:fixed;left:auto;right:20px;top:70px;margin:0;width:360px;max-height:80vh;overflow:auto;padding:18px;background:#20242c;color:#eee;border:1px solid #697587;border-radius:8px;z-index:110;}
+.gtt-panel h2 {font-size:20px;}
+.gtt-panel label {display:block;margin:9px 0;}
+.gtt-panel input,.gtt-panel select {display:block;width:100%;margin-top:4px;background:#12151a;color:#eee;border:1px solid #697587;padding:5px;}
+.gtt-panel button {color:#eee;background:#384657;border:1px solid #697587;margin:4px 0;}
+.gtt-actions {display:flex;gap:8px;}
+.gtt-feedback {color:#ffb6ad;}
+.gtt-hint {font-size:12px;color:#c1c8d3;}

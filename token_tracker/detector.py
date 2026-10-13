@@ -9,19 +9,27 @@ class Observation:
     confidence: float
 
 class YoloBaseDetector:
-    def __init__(self, weights, confidence=0.5, keypoint_confidence=0.5):
+    def __init__(self, weights, confidence=0.5, keypoint_confidence=0.5, image_size=960, device=None):
         from ultralytics import YOLO
         self.model = YOLO(weights)
         if self.model.task != "pose":
             raise ValueError("Use custom pose weights with base-center keypoint zero")
+        shape = getattr(self.model.model.model[-1], "kpt_shape", None)
+        if shape is not None and list(shape) != [1, 3]:
+            raise ValueError("Weights must have exactly one base keypoint with visibility; human pose weights are incompatible")
+        if not 0 < confidence <= 1 or not 0 < keypoint_confidence <= 1:
+            raise ValueError("Confidence thresholds must be in (0,1]")
         self.confidence = confidence
         self.keypoint_confidence = keypoint_confidence
+        self.image_size,self.device = image_size,device
 
     def detect(self, frame):
-        result = self.model.predict(frame, conf=self.confidence, verbose=False)[0]
+        result = self.model.predict(frame, conf=self.confidence, verbose=False,imgsz=self.image_size,device=self.device)[0]
         observations = []
         if result.keypoints is None:
             return observations
+        if result.keypoints.data.shape[1:] != (1, 3):
+            raise ValueError("Expected one base-center keypoint with visibility per miniature")
         # Fixed-set prototype: one unique visual class per physical piece.
         # Duplicate classes are ambiguous and deliberately withheld.
         classes = result.boxes.cls.cpu().tolist()

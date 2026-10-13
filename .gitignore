@@ -6,3 +6,10 @@ __pycache__/
 runs/
 recordings/
 calibration*.json
+
+.test-deps/
+datasets/
+sessions/
+*.jsonl
+build/
+dist/

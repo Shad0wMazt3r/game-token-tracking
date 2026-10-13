@@ -1,3 +1,4 @@
+import {installPanel} from "./panel.mjs";
 import {validatePacket, tokenPosition, loopbackURL} from "./core.mjs";
 const ID = "game-token-tracking";
 let timer = null, controller = null, running = false, cursor = 0, session = null, generation = 0;
@@ -136,9 +137,23 @@ async function useCurrentScene() {
     columns:Math.floor(d.sceneWidth/scene.grid.size),rows:Math.floor(d.sceneHeight/scene.grid.size)};
 }
 
+async function configure(data) {
+  requireGM(); stop();
+  const allowed=new Set(["bridgeURL","bridgeKey","sceneId","originX","originY"]);
+  for (const [key,value] of Object.entries(data)) {
+    if (!allowed.has(key)) throw new Error("Unknown configuration key");
+    if (key.startsWith("origin") && !Number.isFinite(value)) throw new Error("Finite board origin required");
+    if (!key.startsWith("origin") && typeof value!=="string") throw new Error("Text configuration required");
+  }
+  if (data.bridgeURL) loopbackURL(data.bridgeURL);
+  for (const [key,value] of Object.entries(data)) await game.settings.set(ID,key,value);
+}
+
 Hooks.once("ready",()=>{
-  game.modules.get(ID).api={start,stop,pair,unpair,useCurrentScene,
+  game.modules.get(ID).api={start,stop,pair,unpair,useCurrentScene,configure,
+    pairings:()=>{requireGM();return structuredClone(setting("pairings")[canvas.scene?.id] ?? {});},
     status:()=>({running,sceneId:setting("sceneId"),cursor,session,lastError,board:lastPacket ? {columns:lastPacket.columns,rows:lastPacket.rows}:null}),
     tokens:()=>{ requireGM(); return canvas.scene?.tokens.map(t=>({id:t.id,name:t.name,width:t.width,height:t.height})) ?? []; }};
+  if (typeof document!=="undefined") installPanel(game.modules.get(ID).api);
 });
 Hooks.on("canvasTearDown",()=>stop());

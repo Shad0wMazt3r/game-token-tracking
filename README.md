@@ -1,49 +1,50 @@
 # Game Token Tracking
 
-Local Python prototype for tabletop minis viewed by ordinary, unmounted webcams beside a table.
+Local tabletop miniature tracking using ordinary, unmounted consumer webcams beside a table. Physical positions are mapped into a configurable square grid and sent to manually paired Foundry VTT tokens.
 
-## Current scope
+## Implemented
 
-Single-camera calibration and inference, configurable square grid, base-center pose keypoints, movement stabilization, and JSON movement events. Includes a localhost Foundry v13 bridge and GM module. No trained weights, multi-camera identity fusion, or measured accuracy claim yet. This is a fixed-piece-set experiment, not an arbitrary-mini recognizer.
+- One/two-camera latest-frame capture and shared board coordinates.
+- Full-board or partial-view calibration from visible grid intersections.
+- Custom YOLO pose adapter: one base-center keypoint and a distinct class per physical piece.
+- Conservative multi-view fusion, geometry sensitivity checks and stable movement events.
+- Local image capture, interactive labeling, session-level dataset splits and training commands.
+- Foundry v13 module with a GM control panel, persistent per-scene pairings and localhost bridge.
+- Move-trial evaluation plus Python/JavaScript tests.
 
-## Setup
+**No trained miniature weights are included.** The code is a prototype, not a validated arbitrary-mini recognizer. Live camera/Foundry testing and measured acceptance results remain to be done.
 
-Python 3.10+; create a virtual environment, then run:
+## Install
+
+Python 3.10+; Node 22 is needed only for JavaScript tests.
 
 ```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 python -m pip install -e ".[yolo]"
-python -m token_tracker.cli calibrate --source 0 --columns 12 --rows 8
-python -m token_tracker.cli track --source 0 --calibration calibration.json --weights best.pt
-python -m unittest discover -s tests
 ```
 
-Calibration uses a frozen camera frame: click the board corners in TL, TR, BR, BL order; Enter saves, R resets, Esc exits. A video path may replace the camera index. Do not move the camera after calibration.
+For CPU-only bridge/testing work, install `-e .` without the optional YOLO dependencies.
 
-## Model contract
+## Start here
 
-Train a YOLO pose model with one keypoint per mini: the center of its base on the board plane. The first experiment uses one visual class per distinct physical piece. Multiple detections with the same class are withheld as ambiguous. Identical pieces require another identity strategy. Generic pretrained human-pose weights do not satisfy this contract.
-
-Annotate representative footage from the actual angled placements, including rotations, overlaps, and hands. Use a pose dataset YAML with `kpt_shape: [1, 3]`, `flip_idx: [0]`, and your class names. A starting training command:
+1. [Foundry setup](docs/foundry-setup.md): test a token movement without a camera.
+2. [Prototype walkthrough](docs/prototype-walkthrough.md): capture footage, label pieces, train and calibrate both views.
+3. Edit [examples/session.json](examples/session.json), then run:
 
 ```powershell
-yolo pose train model=yolo11n-pose.pt data=dataset.yaml epochs=60 imgsz=960
+python -m token_tracker.session examples/session.json --log moves.jsonl
 ```
 
-Fine-tuning needs actual images and labels. Split by recording session to avoid adjacent-frame leakage. Keep fully occluded points labeled consistently; never assume a predicted hidden keypoint is trustworthy without testing.
+## Tests
 
-## Geometry and reliability
+```powershell
+python -m unittest discover -s tests -v
+node --test tests/foundry/core.test.mjs tests/foundry/module.test.mjs
+```
 
-Homography maps board-plane points only. Body bounding-box centers are not suitable for oblique views. Edge-on views amplify position error; distortion correction and additional board reference points are future work. Each eventual camera needs its own calibration into the same board coordinates.
+## Current limits
 
-Stable updates require a 200 ms window with observations close to the anchor and no large observation gap. Missing and off-board observations clear pending movement but preserve confirmed positions. Off-board inactivity and persistent Foundry mappings are not implemented yet. Events identify the physical class, column, row, and observation timestamp.
+This first model assigns one class per visually distinct piece; adding pieces requires retraining. Identical pieces cannot reliably keep separate identities through complete occlusion. Two cameras improve visibility but do not make hidden bases observable. The sensitivity estimate describes planar projection geometry, not learned keypoint accuracy. Capture-to-Foundry latency and the 95% grid-square goal have not been measured.
 
-## Next steps
-
-1. Capture and label actual tabletop footage; train base-keypoint weights.
-2. Evaluate grid accuracy, identity swaps, and end-to-end latency on held-out sessions.
-3. Add independently calibrated second-camera observations and ambiguity handling.
-4. Validate the Foundry integration in a live world; add reusable visual profiles.
-
-## Foundry VTT
-
-See [Foundry setup](docs/foundry-setup.md) for installation, per-scene pairing macros, localhost bridge configuration, and a manual movement test that needs no camera or trained model. Targets v13; live-world compatibility has not yet been verified.
+The Foundry module targets v13 and one GM browser. Other versions, game systems, hosted HTTPS setups and arbitrary real minis need evaluation.

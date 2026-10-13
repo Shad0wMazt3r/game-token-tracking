@@ -1,0 +1,29 @@
+{
+  "weights": "../runs/pose/train/weights/best.pt",
+  "imgsz": 960,
+  "device": null,
+  "cameras": [
+    {
+      "id": "left",
+      "source": 0,
+      "calibration": "../calibration-left.json",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "id": "right",
+      "source": 1,
+      "calibration": "../calibration-right.json",
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "settle_ms": 200,
+  "max_gap_ms": 500,
+  "max_age_ms": 300,
+  "disagreement_cells": 0.4,
+  "max_uncertainty_cells": 0.35,
+  "tolerance_cells": 0.12,
+  "bridge": "http://127.0.0.1:8765",
+  "scene_id": "REPLACE_WITH_SCENE_ID"
+}
