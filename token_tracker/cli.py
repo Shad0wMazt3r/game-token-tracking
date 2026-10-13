@@ -2,6 +2,7 @@
 import argparse
 from dataclasses import asdict
 import json
+import os
 import time
 import cv2
 from .calibration import Calibration
@@ -18,13 +19,23 @@ def main():
     tracking.add_argument("--calibration", required=True)
     tracking.add_argument("--weights", required=True)
     tracking.add_argument("--settle-ms", type=float, default=200)
+    tracking.add_argument("--bridge", help="Optional localhost Foundry bridge URL")
+    tracking.add_argument("--scene-id", help="Required with --bridge")
     for p in (calibration, tracking):
         p.add_argument("--source", default="0", help="Webcam index or video path")
     args = parser.parse_args()
     is_camera = args.source.isdecimal()
     source = int(args.source) if is_camera else args.source
+    publisher = None
+    if args.command == "track" and args.bridge:
+        from .bridge import BridgePublisher, AsyncBridgePublisher
+        configured = Calibration.load(args.calibration)
+        sender = BridgePublisher(args.bridge,os.environ.get("TOKEN_TRACKER_KEY"),args.scene_id,configured.columns,configured.rows)
+        publisher = AsyncBridgePublisher(sender)
     capture = cv2.VideoCapture(source)
     if not capture.isOpened():
+        if publisher:
+            publisher.close()
         raise SystemExit("Cannot open camera/video")
     try:
         if args.command == "calibrate":
@@ -74,6 +85,8 @@ def main():
                     event = state.observe(observation.piece_id,x,y,timestamp)
                     if event:
                         print(json.dumps(asdict(event)),flush=True)
+                        if publisher:
+                            publisher.publish(event)
                     location = (int(observation.x),int(observation.y))
                     cv2.circle(frame,location,4,(0,255,0),-1)
                     cv2.putText(frame,f"{observation.piece_id}: {x:.1f},{y:.1f}",location,cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,255,0),1)
@@ -84,6 +97,8 @@ def main():
                 if cv2.waitKey(1) & 255 == 27:
                     break
     finally:
+        if publisher:
+            publisher.close()
         capture.release()
         cv2.destroyAllWindows()
 

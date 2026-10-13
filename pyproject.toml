@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "game-token-tracking"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.26", "opencv-python>=4.9"]
 
@@ -13,6 +13,7 @@ yolo = ["ultralytics>=8.3"]
 
 [project.scripts]
 token-tracker = "token_tracker.cli:main"
+token-tracker-bridge = "token_tracker.bridge:main"
 
 [tool.setuptools.packages.find]
 include = ["token_tracker*"]

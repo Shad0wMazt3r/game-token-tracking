@@ -4,7 +4,7 @@ Local Python prototype for tabletop minis viewed by ordinary, unmounted webcams 
 
 ## Current scope
 
-Single-camera calibration and inference, configurable square grid, base-center pose keypoints, movement stabilization, and JSON movement events. No trained weights, Foundry integration, multi-camera identity fusion, or measured accuracy claim yet. This is a fixed-piece-set experiment, not an arbitrary-mini recognizer.
+Single-camera calibration and inference, configurable square grid, base-center pose keypoints, movement stabilization, and JSON movement events. Includes a localhost Foundry v13 bridge and GM module. No trained weights, multi-camera identity fusion, or measured accuracy claim yet. This is a fixed-piece-set experiment, not an arbitrary-mini recognizer.
 
 ## Setup
 
@@ -42,4 +42,8 @@ Stable updates require a 200 ms window with observations close to the anchor and
 1. Capture and label actual tabletop footage; train base-keypoint weights.
 2. Evaluate grid accuracy, identity swaps, and end-to-end latency on held-out sessions.
 3. Add independently calibrated second-camera observations and ambiguity handling.
-4. Add manual pairing, persistent profiles, and an isolated Foundry adapter.
+4. Validate the Foundry integration in a live world; add reusable visual profiles.
+
+## Foundry VTT
+
+See [Foundry setup](docs/foundry-setup.md) for installation, per-scene pairing macros, localhost bridge configuration, and a manual movement test that needs no camera or trained model. Targets v13; live-world compatibility has not yet been verified.
