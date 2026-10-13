@@ -1,5 +1,11 @@
 # Prototype walkthrough
 
+[Documentation home](../README.md) · [Configuration](configuration.md) · [Troubleshooting](troubleshooting.md) · [Validation](validation.md)
+
+## Preparation order
+
+Prove the manual Foundry path first. Check camera placement and calibration next; those checks do not require weights. Then capture and label independent sessions, train, and run held-out trials. The sections below are a reference workflow; calibration can be completed before training.
+
 ## Scope
 
 This workflow builds a fixed-set model for up to eight visually distinct physical pieces. It uses ordinary webcams placed beside the table, without mounts or markers on the pieces. Keep the cameras fixed after calibration. The board must have visible non-collinear reference points; a camera looking exactly along the board plane cannot recover stable board coordinates.

@@ -1,12 +1,34 @@
 # Foundry integration setup
 
+[Documentation home](../README.md) · [Architecture](architecture.md) · [Protocol](bridge-protocol.md) · [Troubleshooting](troubleshooting.md)
+
 Targets Foundry VTT v13, square-grid scenes, and one connected GM browser. The module runs inside the GM client, using its existing Foundry permissions to update TokenDocuments. Python never receives your Foundry password or session cookie. Live Foundry testing is still required; automated tests use simulated Foundry globals.
+
+## Deployment topology
+
+```mermaid
+flowchart TD
+  subgraph Computer["GM computer"]
+    P["Tracker or manual move command"] -->|"Authenticated POST"| B["Loopback bridge"]
+    G["GM browser and module"] -->|"Authenticated polling"| B
+    B -->|"Fresh movements"| G
+  end
+  G -->|"GM token updates"| F["Foundry server and world"]
+```
+
+The tracker, bridge, and GM browser are shown on one computer for the first setup. Foundry's server may run elsewhere; the bridge still belongs on the GM browser's computer. Its localhost URL cannot reach a teammate's machine.
 
 ## 1. Install the module
 
 Copy the repository directory `foundry/game-token-tracking` into your Foundry user-data directory at `Data/modules/game-token-tracking`. The module.json file must be directly inside that folder. Restart Foundry, open your world, and enable **Game Token Tracking** in Manage Modules.
 
 Installation uses a local folder, not a downloadable manifest URL. A release archive/manifest installer is not provided yet.
+
+## GM control panel
+
+The module now adds a **Token Tracker** button at the bottom-right of the GM screen. It provides connection settings, current-scene selection, manual pairing with the selected canvas token, pairing removal, status, and Start/Stop controls. The macro API above remains available. The panel masks its bridge-token input; the underlying Foundry settings field remains unmasked.
+
+The panel is the quickest setup route. The macros below expose the same controls for debugging and automation.
 
 ## 2. Select the target scene
 
@@ -126,7 +148,3 @@ These cover the real localhost HTTP protocol and simulated Foundry lifecycle, ge
 - https://foundryvtt.com/article/module-development/
 - https://foundryvtt.com/api/v13/classes/foundry.documents.TokenDocument.html
 - https://foundryvtt.com/api/v13/classes/foundry.documents.Scene.html
-
-## GM control panel
-
-The module now adds a **Token Tracker** button at the bottom-right of the GM screen. It provides connection settings, current-scene selection, manual pairing with the selected canvas token, pairing removal, status, and Start/Stop controls. The macro API above remains available. The panel masks its bridge-token input; the underlying Foundry settings field remains unmasked.

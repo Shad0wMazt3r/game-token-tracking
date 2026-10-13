@@ -1,50 +1,83 @@
 # Game Token Tracking
 
-Local tabletop miniature tracking using ordinary, unmounted consumer webcams beside a table. Physical positions are mapped into a configurable square grid and sent to manually paired Foundry VTT tokens.
+Track tabletop miniatures with ordinary, unmounted consumer webcams placed beside the table, and synchronize confirmed grid positions to manually paired Foundry VTT tokens.
 
-## Implemented
+**Status:** software prototype with one/two-camera tracking, dataset tooling, and a Foundry v13 module. No trained miniature weights or measured camera-to-Foundry accuracy/latency are included. The first model uses a fixed inventory of visually distinct pieces.
 
-- One/two-camera latest-frame capture and shared board coordinates.
-- Full-board or partial-view calibration from visible grid intersections.
-- Custom YOLO pose adapter: one base-center keypoint and a distinct class per physical piece.
-- Conservative multi-view fusion, geometry sensitivity checks and stable movement events.
-- Local image capture, interactive labeling, session-level dataset splits and training commands.
-- Foundry v13 module with a GM control panel, persistent per-scene pairings and localhost bridge.
-- Move-trial evaluation plus Python/JavaScript tests.
+## Architecture at a glance
 
-**No trained miniature weights are included.** The code is a prototype, not a validated arbitrary-mini recognizer. Live camera/Foundry testing and measured acceptance results remain to be done.
+```mermaid
+flowchart TD
+  subgraph Local["Local computer"]
+    C["One or two side webcams"] --> V["YOLO base keypoints"]
+    K["Per-camera board calibration"] --> P["Project into board coordinates"]
+    V --> P
+    P --> F["Reject stale, weak, or conflicting views"]
+    F --> S["Confirm stable grid positions"]
+    S --> B["Authenticated localhost bridge"]
+  end
+  subgraph GM["GM browser"]
+    M["Foundry module"] --> T["Paired scene tokens"]
+    R["Per-scene piece pairings"] --> M
+  end
+  M -->|"Poll fresh events"| B
+  B -->|"Grid movement packets"| M
+```
+
+Two independent planar views improve visibility; this is not stereo triangulation. A hidden base and an identical piece remain sources of ambiguity.
+
+## Start here
+
+| Goal | Guide |
+|---|---|
+| Understand components, geometry, and design decisions | [Architecture](docs/architecture.md) |
+| Prove token movement before training | [Foundry setup](docs/foundry-setup.md) |
+| Capture, label, train, calibrate, and run cameras | [Prototype walkthrough](docs/prototype-walkthrough.md) |
+| Configure cameras and thresholds | [Configuration reference](docs/configuration.md) |
+| Integrate with the local service | [Bridge protocol](docs/bridge-protocol.md) |
+| Diagnose setup or tracking failures | [Troubleshooting](docs/troubleshooting.md) |
+| Plan and record acceptance testing | [Validation plan](docs/validation.md) |
 
 ## Install
 
-Python 3.10+; Node 22 is needed only for JavaScript tests.
+Run from the repository root. Python 3.10+ is required; Node 22 is used for the JavaScript checks.
 
 ```powershell
+git clone https://github.com/Shad0wMazt3r/game-token-tracking.git
+cd game-token-tracking
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[yolo]"
 ```
 
-For CPU-only bridge/testing work, install `-e .` without the optional YOLO dependencies.
+On Linux/macOS activate with `source .venv/bin/activate`. For bridge work and Python checks, `python -m pip install -e .` avoids the optional YOLO dependency. A desktop session is required for OpenCV capture/labeling windows.
 
-## Start here
+## Run
 
-1. [Foundry setup](docs/foundry-setup.md): test a token movement without a camera.
-2. [Prototype walkthrough](docs/prototype-walkthrough.md): capture footage, label pieces, train and calibrate both views.
-3. Edit [examples/session.json](examples/session.json), then run:
+First follow the Foundry guide's manual movement test. Once custom weights and calibration files exist, edit [examples/session.json](examples/session.json):
 
 ```powershell
 python -m token_tracker.session examples/session.json --log moves.jsonl
 ```
 
-## Tests
+Set `bridge` to `null` for vision-only testing. Space pauses, G toggles the grid, R clears confirmed positions so stable observations can be emitted again, and Esc exits.
+
+## Developer checks
 
 ```powershell
 python -m unittest discover -s tests -v
 node --test tests/foundry/core.test.mjs tests/foundry/module.test.mjs
 ```
 
-## Current limits
+[Windows/Linux CI](.github/workflows/test.yml) checks software behavior. It does not establish live webcam or Foundry compatibility. See the validation plan for evidence needed before making accuracy claims.
 
-This first model assigns one class per visually distinct piece; adding pieces requires retraining. Identical pieces cannot reliably keep separate identities through complete occlusion. Two cameras improve visibility but do not make hidden bases observable. The sensitivity estimate describes planar projection geometry, not learned keypoint accuracy. Capture-to-Foundry latency and the 95% grid-square goal have not been measured.
+## Scope and limits
 
-The Foundry module targets v13 and one GM browser. Other versions, game systems, hosted HTTPS setups and arbitrary real minis need evaluation.
+- Each distinct physical piece has its own model class; adding pieces requires retraining.
+- Duplicate class detections are withheld. Identical pieces cannot reliably retain identity through complete occlusion.
+- Calibration applies to the board plane. Body centers and elevated keypoints introduce position errors.
+- Missing, ambiguous, and off-board observations preserve the last confirmed digital position.
+- Foundry support targets v13, square grids, one GM browser, and positional synchronization. Walls and game-system movement rules are not enforced.
+- The 95% grid-square goal and p50 below 500 ms remain unmeasured targets.
+
+No recordings, private bridge keys, or trained weights should be committed.
