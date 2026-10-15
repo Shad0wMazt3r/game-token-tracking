@@ -70,6 +70,6 @@ python -m playwright install chromium
 python tests/browser_checks.py
 ```
 
-The browser checks run the real local dashboard and real module JavaScript against a simulated Foundry host, including actual authenticated HTTP delivery to the service. They cover desktop/mobile layout, simulation, pause, invalid inventory, missing camera setup, pairing, applied token updates, stop, removal, panel reopening, and connection loss/recovery. Screenshots are written to ignored `test-results/`.
+The browser checks run the real local dashboard and real module JavaScript against a simulated Foundry host, including actual authenticated HTTP delivery to the service. They cover desktop/mobile layout, simulation, pause, invalid inventory, missing camera setup, pairing, applied token updates, stop, removal, panel reopening, and connection loss/recovery. Calibration click order and scaled-image coordinates are checked with a synthetic preview and a stubbed save endpoint; calibration math is covered separately by the Python suite. Screenshots are written to ignored `test-results/`.
 
 This is not live Foundry testing. Verify the module in the team's licensed v13 world and game system before claiming compatibility. No camera accuracy, trained weights, automatic camera reconnect, or complete end-to-end latency measurement is supplied by this UI.

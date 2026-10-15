@@ -26,6 +26,7 @@ function render() {
   $('board-size').textContent = s.columns + ' × ' + s.rows; $('piece-count').textContent = s.pieces.length;
   $('run-state').textContent = s.running ? 'Running' : 'Paused'; $('start').textContent = s.mode === 'simulation' ? 'Start simulation' : 'Start tracking';
   $('start').disabled = s.running; $('pause').disabled = !s.running;
+  $('save-inventory').disabled = s.mode !== 'simulation';
   $('simulation-tab').setAttribute('aria-pressed', s.mode === 'simulation'); $('camera-tab').setAttribute('aria-pressed', s.mode === 'camera');
   $('camera-tools').hidden = s.mode !== 'camera';
   $('notice').textContent = s.error || (s.mode === 'simulation' ? 'Simulation sends real bridge events. Start the Foundry module before moving pieces.' : 'Camera mode uses custom miniature weights. Freeze and calibrate every view before starting.');

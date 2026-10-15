@@ -75,6 +75,8 @@ class Runtime:
                 self.error = ""
                 self.running = True
             elif action == "inventory":
+                if self.mode != "simulation":
+                    raise ValueError("Edit inventory in simulation mode; camera inventory comes from the model")
                 pieces = data.get("pieces")
                 if (not isinstance(pieces, list) or not 1 <= len(pieces) <= 64 or
                     any(not isinstance(p, str) or not p.strip() or len(p) > 128 for p in pieces) or
@@ -140,8 +142,12 @@ class Runtime:
                 raise ValueError("Camera frame is stale; reconnect the camera")
             if freeze:
                 self.running = False
-                self.pipeline.reset()
+                self.pipeline.state.pending.clear()
+                self.pipeline.processed.clear()
                 self.previews[camera_id] = frame.copy()
+            elif camera_id in self.boards:
+                from .session import draw_grid
+                draw_grid(frame, self.boards[camera_id])
             ok, encoded = cv2.imencode(".jpg", frame)
             if not ok:
                 raise ValueError("Cannot encode preview")
@@ -221,7 +227,8 @@ class Runtime:
                 except Exception as error:
                     self.error = str(error)
                     self.running = False
-                    self.pipeline.reset()
+                    self.pipeline.state.pending.clear()
+                    self.pipeline.processed.clear()
 
     def close(self):
         self.halt.set()
@@ -255,7 +262,10 @@ def dashboard_server(state, token, origin, port=8765, directory="dashboard-data"
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
             self.end_headers()
-            self.wfile.write(data)
+            try:
+                self.wfile.write(data)
+            except ConnectionError:
+                pass  # Browser navigation can close a preview response early.
 
         def do_GET(self):
             if not self.valid_host():

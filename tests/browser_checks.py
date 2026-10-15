@@ -4,6 +4,7 @@ Run separately from unittest discovery: python tests/browser_checks.py
 Set PLAYWRIGHT_CHROMIUM_EXECUTABLE only to use an existing local Chromium.
 """
 import json
+import base64
 import os
 from pathlib import Path
 import sys
@@ -68,6 +69,26 @@ def main():
                 expect(page.locator("#camera-tools")).to_be_visible()
                 page.get_by_role("button",name="Start tracking",exact=True).click()
                 expect(page.locator("#toast")).to_contain_text("Open cameras")
+                # Calibration interaction uses a synthetic image; real geometry is
+                # separately tested by test_calibration.py, not by this UI stub.
+                image=page.evaluate("""() => {const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d');x.fillStyle='#142b21';x.fillRect(0,0,800,600);x.strokeStyle='#b8efcf';x.strokeRect(80,80,640,440);return c.toDataURL('image/png').split(',')[1];}""")
+                page.route("**/api/freeze",lambda r:r.fulfill(body=base64.b64decode(image),content_type="image/png"))
+                saved=[]
+                def calibration_route(route):
+                    saved.append(route.request.post_data_json)
+                    return route.fulfill(json={"residual_cells":0.003,"image_size":[800,600]})
+                page.route("**/api/calibrate",calibration_route)
+                page.get_by_role("button",name="Freeze for calibration",exact=True).click()
+                expect(page.locator("#calibration-hint")).to_contain_text("Click reference 1")
+                canvas=page.locator("#preview")
+                box=canvas.bounding_box()
+                for x,y in ((80,80),(720,80),(720,520),(80,520)):
+                    canvas.click(position={"x":x*box['width']/800,"y":y*box['height']/600})
+                page.get_by_role("button",name="Save calibration",exact=True).click()
+                expect(page.locator("#calibration-result")).to_contain_text("Saved")
+                assert len(saved)==1 and len(saved[0]['image_points'])==4
+                assert abs(saved[0]['image_points'][0][0]-80)<3
+                page.unroute("**/api/freeze");page.unroute("**/api/calibrate")
                 page.get_by_role("button",name="Simulation",exact=True).click()
                 page.locator("summary").click()
                 page.get_by_role("button",name="Start simulation",exact=True).click()

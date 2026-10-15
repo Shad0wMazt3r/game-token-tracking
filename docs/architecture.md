@@ -38,6 +38,9 @@ The Foundry server may be elsewhere, but the bridge must run on the GM browser's
 
 | Source | Responsibility |
 |---|---|
+| `token_tracker/dashboard.py` and `token_tracker/web/` | Local control service, simulation board, camera previews/calibration, and runtime status |
+| `token_tracker/pipeline.py` | Deterministic fusion/stabilization orchestration for dashboard cameras and replay |
+| `token_tracker/replay.py` | Validate and replay board-space snapshots, optionally through HTTP |
 | `token_tracker/capture.py` | Background webcam reads; only the latest frame is retained |
 | `token_tracker/detector.py` | Custom pose weights; one base point; duplicate-class rejection |
 | `token_tracker/calibration.py` | Homography, calibration residual, geometric sensitivity |
