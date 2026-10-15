@@ -141,3 +141,31 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(runtime.status()["cameras"][0]["error"], Camera.error)
         self.assertEqual(runtime.status()["confirmed"]["goblin_1"], [3, 2])
         self.assertEqual(runtime.pipeline.state.pending, {})
+
+    def test_inference_failure_and_resolution_change_stop_safely(self):
+        import time
+        runtime = self.server.runtime
+        class Frame:
+            shape = (720, 1280, 3)
+        class Camera:
+            error = None
+            def snapshot(self): return Frame(), 1, time.monotonic()
+            def close(self): pass
+        class Board:
+            image_size = (1280, 720)
+        class Detector:
+            def detect(self, frame): raise RuntimeError("Inference unavailable")
+        runtime.cameras["0"] = Camera()
+        runtime.detector = Detector()
+        runtime.boards["0"] = Board()
+        for shape, message in (((720, 1280, 3), "Inference unavailable"), ((480, 640, 3), "resolution changed")):
+            with self.subTest(shape=shape):
+                Frame.shape = shape
+                runtime.mode = "camera"
+                runtime.running = True
+                runtime.pipeline.state.confirmed["goblin_1"] = (3, 2)
+                with patch.object(runtime.halt, "wait", side_effect=[False, True]):
+                    runtime._loop()
+                self.assertFalse(runtime.running)
+                self.assertIn(message, runtime.error)
+                self.assertEqual(runtime.pipeline.state.confirmed["goblin_1"], (3, 2))
