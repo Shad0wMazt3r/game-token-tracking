@@ -2,7 +2,7 @@
   "id": "game-token-tracking",
   "title": "Game Token Tracking",
   "description": "Sync physical tabletop pieces from a local tracker to manually paired Foundry tokens.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "compatibility": {
     "minimum": "13",
     "maximum": "13"

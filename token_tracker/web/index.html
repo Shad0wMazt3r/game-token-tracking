@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Table / Token Tracking</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<aside class="rail"><a class="mark" href="/" aria-label="Table home">T<span>·</span></a><span class="rail-label">PHYSICAL → DIGITAL</span><span class="rail-foot">LOCAL<br>CONTROL</span></aside>
+<div class="workspace">
+<header><div class="brand">TABLE <span>/ TOKEN TRACKING</span></div><span class="connection" id="connection">Disconnected</span><button class="quiet" id="connection-button">Connection</button></header>
+<main>
+<div class="heading"><div><p class="eyebrow">YOUR TABLE. IN SYNC.</p><h1>Keep the game moving.</h1><p class="subtitle">A local workspace for physical pieces and their digital positions.</p></div><div class="session-meta"><span class="eyebrow">TARGET SCENE</span><strong id="scene">Not connected</strong><span id="dimensions">—</span></div></div>
+<section class="auth panel" id="auth"><div><h2>Connect to your local session</h2><p>Open the link printed by the dashboard command, or enter its bridge key.</p></div><form id="auth-form"><label>Bridge key<input type="password" id="key" autocomplete="off" required minlength="16"></label><button class="primary">Connect</button></form></section>
+<div class="toolbar"><div class="tabs" role="group" aria-label="Tracking source"><button id="simulation-tab" aria-pressed="true">Simulation</button><button id="camera-tab" aria-pressed="false">Cameras</button></div><div class="controls"><span id="run-state" class="state">Paused</span><button id="resync" class="quiet">Resync</button><button id="start" class="primary">Start simulation</button><button id="pause">Pause</button></div></div>
+<div class="notice" id="notice" role="status">Simulation sends real bridge events. Start the Foundry module before moving pieces.</div>
+<section id="camera-tools" class="panel" hidden>
+<div class="section-top"><div><p class="eyebrow">CAPTURE & CALIBRATION</p><h2>Give each view a reference.</h2></div><span class="tag">1280 × 720 requested</span></div>
+<div class="camera-settings"><label>Webcam indices<input id="sources" value="0, 1" aria-describedby="source-help"></label><button id="open-cameras">Open cameras</button><label>Local custom weights (.pt)<input id="weights" placeholder="C:\models\best.pt"></label><button id="load-weights">Load weights · CPU</button></div>
+<p class="hint" id="source-help">One or two comma-separated indices. Use your final side-of-table placement; keep cameras fixed after calibration.</p>
+<div class="calibration-layout"><div class="preview-wrap"><canvas id="preview" width="1280" height="720" aria-label="Camera preview; click board references to calibrate"></canvas><div id="preview-empty">Open a camera to see its view.</div></div><div class="calibration-form"><label>View<select id="camera-select"><option value="0">Camera 1</option><option value="1">Camera 2</option></select></label><button id="freeze">Freeze for calibration</button><label>Board intersections in click order<textarea id="references" rows="3">[[0,0],[12,0],[12,8],[0,8]]</textarea></label><p id="calibration-hint" class="hint">Freeze a frame, then click each reference. For partial views, enter visible grid intersections.</p><div class="controls"><button id="clear-points">Reset points</button><button id="save-calibration" class="primary">Save calibration</button></div><p class="hint" id="calibration-result"></p></div></div>
+<div id="camera-diagnostics" class="diagnostics"></div>
+</section>
+<div class="content-grid">
+<section class="board-panel panel"><div class="section-top"><div><p class="eyebrow">SHARED BOARD SPACE</p><h2 id="board-title">The table</h2></div><span class="tag" id="board-size">12 × 8</span></div><p class="hint" id="board-hint">Select a piece, then choose a square. Or drag a piece onto the board.</p><div class="board-scroll"><div id="board" class="board" role="group" aria-label="Simulation board"></div></div><div class="board-footer"><span><i class="dot"></i> Confirmed position</span><span>Coordinates start at 0, 0</span></div></section>
+<aside class="inventory panel"><div class="section-top"><div><p class="eyebrow">PHYSICAL INVENTORY</p><h2>Pieces <span id="piece-count">0</span></h2></div></div><p class="hint">IDs must match your model classes and Foundry pairings.</p><div id="pieces"></div><details><summary>Edit inventory</summary><label>One ID per line<textarea id="inventory" rows="5">goblin_1
+knight_1
+wizard_1</textarea></label><button id="save-inventory">Save inventory</button><p class="hint">Saving pauses tracking. Camera weights replace this inventory with their class names.</p></details><div class="foundry-note"><span class="eyebrow">FOUNDRY VTT</span><h3>Pair once. Move together.</h3><p>In Foundry, open Token Tracker, select a scene, and pair these IDs with placed tokens.</p><p class="muted">This dashboard confirms bridge acceptance. Applied updates appear in the Foundry panel.</p></div></aside>
+</div>
+<section class="activity panel"><div class="section-top"><div><p class="eyebrow">DELIVERY ACTIVITY</p><h2>Recent movements</h2></div><button id="export" class="quiet">Export recent JSON</button></div><div class="table-scroll"><table><thead><tr><th>Piece</th><th>Grid square</th><th>Source</th><th>Delivery</th><th>Sequence</th></tr></thead><tbody id="history"><tr><td colspan="5" class="empty">No movements yet. Start simulation and place a piece.</td></tr></tbody></table></div></section>
+<footer><span>On your computer. Under your control.</span><span>Vision and live Foundry performance require validation.</span></footer>
+</main></div><div id="toast" role="alert" hidden></div>
+</body></html>

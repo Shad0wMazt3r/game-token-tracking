@@ -4,18 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "game-token-tracking"
-version = "0.3.0"
+version = "0.4.0"
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.26", "opencv-python>=4.9"]
 
 [project.optional-dependencies]
 yolo = ["ultralytics>=8.3"]
+test = ["playwright>=1.50,<2"]
 
 [project.scripts]
 token-tracker = "token_tracker.cli:main"
 token-tracker-bridge = "token_tracker.bridge:main"
 token-tracker-session = "token_tracker.session:main"
 token-tracker-data = "token_tracker.dataset:main"
+token-tracker-dashboard = "token_tracker.dashboard:main"
+token-tracker-replay = "token_tracker.replay:main"
 
 [tool.setuptools.packages.find]
 include = ["token_tracker*"]
+
+[tool.setuptools.package-data]
+token_tracker = ["web/*.html", "web/*.js", "web/*.css"]

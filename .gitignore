@@ -13,3 +13,7 @@ sessions/
 *.jsonl
 build/
 dist/
+dashboard-data/
+.deps/
+test-results/
+*.egg-info/

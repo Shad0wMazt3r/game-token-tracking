@@ -3,6 +3,8 @@ import {validatePacket, tokenPosition, loopbackURL} from "./core.mjs";
 const ID = "game-token-tracking";
 let timer = null, controller = null, running = false, cursor = 0, session = null, generation = 0;
 let lastError = "", lastPacket = null;
+let lastPollAt = null, pollMs = null;
+const applied = [];
 const setting = key => game.settings.get(ID,key);
 const requireGM = () => { if (!game.user.isGM) throw new Error("GM required"); };
 
@@ -34,11 +36,21 @@ function geometry(scene) {
 }
 
 async function request(since, signal) {
+  const started = performance.now();
   const response = await fetch(loopbackURL(setting("bridgeURL"))+"/events?since="+since,{
     headers:{Authorization:"Bearer "+setting("bridgeKey")},cache:"no-store",signal
   });
   if (!response.ok) throw new Error("Bridge HTTP "+response.status);
-  return validatePacket(await response.json(),setting("sceneId"));
+  const packet = validatePacket(await response.json(),setting("sceneId"));
+  lastPollAt = Date.now(); pollMs = Math.round(performance.now()-started);
+  return packet;
+}
+
+async function checkConnection() {
+  requireGM();
+  const packet = await request(0, AbortSignal.timeout(2000));
+  lastPacket = packet; lastError = "";
+  return {sceneId:packet.scene_id,columns:packet.columns,rows:packet.rows};
 }
 
 async function tick(epoch) {
@@ -73,6 +85,11 @@ async function tick(epoch) {
       const position = tokenPosition(event,packet,g,token);
       if (token.x !== position.x || token.y !== position.y) {
         await token.update(position,{animate:false});
+      }
+      if (!applied.some(item=>item.session===packet.session && item.sequence===event.sequence)) {
+        applied.unshift({pieceId:event.piece_id,sceneId:scene.id,tokenName:token.name,column:event.column,row:event.row,
+          sequence:event.sequence,session:packet.session,appliedAt:Date.now()});
+        applied.length=Math.min(applied.length,30);
       }
     }
     // Advance only after every mapped update succeeds; retries are idempotent.
@@ -150,10 +167,12 @@ async function configure(data) {
 }
 
 Hooks.once("ready",()=>{
-  game.modules.get(ID).api={start,stop,pair,unpair,useCurrentScene,configure,
+  game.modules.get(ID).api={start,stop,pair,unpair,useCurrentScene,configure,checkConnection,
     pairings:()=>{requireGM();return structuredClone(setting("pairings")[canvas.scene?.id] ?? {});},
-    status:()=>({running,sceneId:setting("sceneId"),cursor,session,lastError,board:lastPacket ? {columns:lastPacket.columns,rows:lastPacket.rows}:null}),
-    tokens:()=>{ requireGM(); return canvas.scene?.tokens.map(t=>({id:t.id,name:t.name,width:t.width,height:t.height})) ?? []; }};
+    status:()=>({running,sceneId:setting("sceneId"),cursor,session,lastError,lastPollAt,pollMs,
+      applied:structuredClone(applied),board:lastPacket ? {columns:lastPacket.columns,rows:lastPacket.rows}:null}),
+    tokens:()=>{ requireGM(); return canvas.scene?.tokens.map(t=>({id:t.id,name:t.name,width:t.width,height:t.height,
+      texture:t.texture?.src,x:t.x,y:t.y})) ?? []; }};
   if (typeof document!=="undefined") installPanel(game.modules.get(ID).api);
 });
 Hooks.on("canvasTearDown",()=>stop());
