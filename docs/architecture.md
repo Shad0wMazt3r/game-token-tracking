@@ -4,6 +4,8 @@
 
 ## System boundary
 
+The optional [dashboard](dashboard.md) now hosts the bridge and a local browser control surface in one Python process. Simulation publishes directly to that bridge; camera mode and synthetic observation replay share `pipeline.py`. The existing CLI session remains available. Foundry's GM panel reports successful document applications; the dashboard reports bridge acceptance separately.
+
 The physical board is observed by one or two fixed consumer webcams resting beside the table. Python performs inference and board-space processing locally. A separate HTTP bridge exposes fresh positions to the GM's Foundry browser, which applies updates using the GM's existing permissions. Python does not authenticate to Foundry.
 
 ```mermaid
@@ -36,6 +38,9 @@ The Foundry server may be elsewhere, but the bridge must run on the GM browser's
 
 | Source | Responsibility |
 |---|---|
+| `token_tracker/dashboard.py` and `token_tracker/web/` | Local control service, simulation board, camera previews/calibration, and runtime status |
+| `token_tracker/pipeline.py` | Deterministic fusion/stabilization orchestration for dashboard cameras and replay |
+| `token_tracker/replay.py` | Validate and replay board-space snapshots, optionally through HTTP |
 | `token_tracker/capture.py` | Background webcam reads; only the latest frame is retained |
 | `token_tracker/detector.py` | Custom pose weights; one base point; duplicate-class rejection |
 | `token_tracker/calibration.py` | Homography, calibration residual, geometric sensitivity |
@@ -135,4 +140,4 @@ Scene changes and pairing/configuration changes stop tracking. One GM browser sh
 | Browser-driven Foundry updates | Reuses GM permissions without exporting credentials | Browser networking restrictions and live compatibility testing |
 | Latest fresh positions | Bounded latency and no old-motion backlog | No guaranteed delivery through long outages |
 
-Camera-independent observation replay, automatic camera reconnect, explicit inactive states, reusable appearance profiles, durable event delivery, and Foundry acknowledgement timing are future work. Recorded-video inference exists in the single-source CLI, but is not a deterministic synthetic replay harness.
+Camera-independent board-observation replay is available through `token_tracker.replay`. The dashboard adds a board simulator, camera preview/calibration, runtime diagnostics, and start/pause/resync controls. Automatic camera reconnect, explicit inactive states, reusable appearance profiles, durable event delivery, and complete Foundry acknowledgement timing remain future work. Recorded-video inference in the single-source CLI remains separate from deterministic observation replay.

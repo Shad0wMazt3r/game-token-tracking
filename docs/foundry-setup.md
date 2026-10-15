@@ -26,6 +26,8 @@ Installation uses a local folder, not a downloadable manifest URL. A release arc
 
 ## GM control panel
 
+The redesigned panel includes a non-starting **Check bridge** action, selected-token pairing, pairing cards, and recent **Applied movements** after token updates resolve. Its request timing is bridge round-trip time, not end-to-end vision latency. Applied history lives only in this browser session.
+
 The module now adds a **Token Tracker** button at the bottom-right of the GM screen. It provides connection settings, current-scene selection, manual pairing with the selected canvas token, pairing removal, status, and Start/Stop controls. The macro API above remains available. The panel masks its bridge-token input; the underlying Foundry settings field remains unmasked.
 
 The panel is the quickest setup route. The macros below expose the same controls for debugging and automation.

@@ -1,0 +1,7 @@
+{"time":0,"observations":[{"piece_id":"goblin_1","x":1.5,"y":2.5,"confidence":0.9,"uncertainty":0.03,"camera":"left","timestamp":0}]}
+{"time":0.1,"observations":[{"piece_id":"goblin_1","x":1.5,"y":2.5,"confidence":0.9,"uncertainty":0.03,"camera":"left","timestamp":0.1}]}
+{"time":0.25,"observations":[{"piece_id":"goblin_1","x":1.5,"y":2.5,"confidence":0.9,"uncertainty":0.03,"camera":"left","timestamp":0.25}]}
+{"time":0.5,"observations":[]}
+{"time":1,"observations":[{"piece_id":"goblin_1","x":4.5,"y":3.5,"confidence":0.9,"uncertainty":0.03,"camera":"right","timestamp":1}]}
+{"time":1.1,"observations":[{"piece_id":"goblin_1","x":4.5,"y":3.5,"confidence":0.9,"uncertainty":0.03,"camera":"right","timestamp":1.1}]}
+{"time":1.25,"observations":[{"piece_id":"goblin_1","x":4.5,"y":3.5,"confidence":0.9,"uncertainty":0.03,"camera":"right","timestamp":1.25}]}

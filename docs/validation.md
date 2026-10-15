@@ -76,7 +76,7 @@ Retain the commit SHA, dependency versions, OS/browser, Foundry version and syst
 | No trained weights | Actual footage, consistent labels, held-out evaluation |
 | No live Foundry evidence | Licensed v13 world and team acceptance run |
 | No full latency instrumentation | Capture-to-update timestamps and a shared timing method |
-| No synthetic observation replay harness | Deterministic camera-independent pipeline input |
+| Live camera path not yet validated | Use synthetic replay for decision logic, then actual camera trials |
 | No explicit inactive state | Product decision and removal/recovery implementation |
 | No automatic camera reopen | Disconnect detection and bounded reconnect behavior |
 | Identical-piece ambiguity | Manual recovery or a changed identity strategy |

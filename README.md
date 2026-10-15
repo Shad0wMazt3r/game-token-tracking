@@ -28,8 +28,17 @@ Two independent planar views improve visibility; this is not stereo triangulatio
 
 ## Start here
 
+**New: [local dashboard and simulation](docs/dashboard.md).** Start a usable board simulator before collecting footage or training:
+
+```powershell
+python -m token_tracker.dashboard --scene-id demo --columns 12 --rows 8
+```
+
+Open the printed URL. To connect Foundry, use its real scene ID and exact browser origin instead of `demo`. The dashboard replaces the separate bridge process and includes camera previews, click calibration, tracking controls, diagnostics, and movement history.
+
 | Goal | Guide |
 |---|---|
+| Operate the dashboard, simulate moves, and replay failures | [Dashboard guide](docs/dashboard.md) |
 | Understand components, geometry, and design decisions | [Architecture](docs/architecture.md) |
 | Prove token movement before training | [Foundry setup](docs/foundry-setup.md) |
 | Capture, label, train, calibrate, and run cameras | [Prototype walkthrough](docs/prototype-walkthrough.md) |

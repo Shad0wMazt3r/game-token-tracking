@@ -70,6 +70,8 @@ Use the GM panel's **Use current scene** to initialize the origin with scene pad
 
 | Command | Input / result |
 |---|---|
+| `python -m token_tracker.dashboard --scene-id ID` | Local dashboard with built-in bridge; defaults to a 12×8 board |
+| `python -m token_tracker.replay TRACE --columns C --rows R` | Synthetic observations → repeatable movement events |
 | `python -m token_tracker.cli calibrate` | Camera/video frame → calibration file |
 | `python -m token_tracker.cli track` | One camera/video + weights → movements |
 | `python -m token_tracker.session CONFIG --log FILE` | One/two live webcams → fused movements and JSONL |
