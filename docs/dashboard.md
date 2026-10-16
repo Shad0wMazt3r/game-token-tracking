@@ -37,11 +37,21 @@ Recent history is bounded to 80 dashboard-originated acceptances and lives in pr
 5. Enter the full path to a trusted local custom `.pt` weights file; Load weights. The initial dashboard uses CPU inference. The inventory is replaced by model class names.
 6. Start tracking. Review frame age, inference duration, usable observations, ambiguity, and confirmed positions.
 
-Calibration files are saved under `dashboard-data/` by default (`--data` changes the directory). Camera handles, inventory edits, model selection, and calibration associations are not restored after restart; reopen cameras and recalibrate in this first UI. Existing CLI/session workflows remain available for saved configuration and GPU inference.
+Calibration records are saved under `dashboard-data/` by default (`--data` changes the directory). After restarting, reopen cameras and load weights again. Compatible calibrations restore automatically when a fresh frame arrives. Camera handles, inventory edits, and model selection are not restored. Existing CLI/session workflows remain available for saved configuration and GPU inference.
+
+### Calibration reuse and recovery
+
+Reuse requires an unambiguous stable physical camera identity, the same board columns/rows, and the exact **actual** frame width/height. Requested 1280×720 settings are not evidence of the delivered size. Records are keyed by camera identity rather than view/index, so changing the enumeration order does not transfer calibration to a different camera. Tracking remains paused after reopening.
+
+Currently automatic identity discovery supports Linux USB V4L2 cameras that expose a serial number, vendor/product IDs, interface number, and video-node index in sysfs. Windows, macOS, cameras without serials, and ambiguous duplicate identities conservatively require calibration each time cameras reopen; they can still be calibrated and tracked during the current session. Model names and enumeration indices are deliberately not treated as physical identities. Serial numbers must be unique and trustworthy; cloned/bogus device serials cannot establish identity.
+
+The camera diagnostics explain whether a calibration was restored, is waiting for a fresh frame, or needs replacement. Missing, malformed, unsupported-version, invalid-matrix, and incompatible records leave that view uncalibrated. Old `calibration-<view>.json` files lack identity metadata and are never automatically imported. For recovery, select the view, **Freeze for calibration**, choose reference points, and **Save calibration**. Saving replaces that camera's versioned record atomically when stable identity is available; otherwise it is session-only. Keep the same `--data` directory across runs.
+
+Identity and resolution cannot establish whether the camera or tabletop moved, or whether lens zoom/cropping changed. Verify the projected grid against unused intersections before starting; explicitly freeze and recalibrate whenever geometry changes, even if the saved record is accepted.
 
 Resync clears confirmed and pending tracker positions. Camera mode emits positions again after fresh stable observations. In Simulation, place pieces again. A removed or hidden physical piece does not delete a digital token.
 
-The UI requests 1280×720; actual size is used for calibration and checked before inference. Disconnects cause stale observations to expire; reopen cameras explicitly to recover. Reopening cameras clears their calibrations. Camera/model failures stop tracking and appear in the interface.
+The UI requests 1280×720; actual size is used for calibration and checked before inference. Disconnects cause stale observations to expire; reopen cameras explicitly to recover. Reopening cameras rechecks saved calibrations against physical identity, board dimensions, and fresh image resolution. A resolution change during tracking stops the tracker and invalidates that view until recalibration. Camera/model failures stop tracking and appear in the interface.
 
 ## Replay repeatable failures
 

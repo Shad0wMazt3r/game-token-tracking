@@ -25,6 +25,9 @@ class Runtime:
         self.cameras = {}
         self.boards = {}
         self.previews = {}
+        self.identities = {}
+        self.calibration_status = {}
+        self.restore_pending = set()
         self.mode = "simulation"
         self.running = False
         self.error = ""
@@ -38,11 +41,12 @@ class Runtime:
 
     def status(self):
         with self.lock:
+            self._restore_calibrations()
             return dict(mode=self.mode, running=self.running, error=self.error,
                         scene_id=self.state.scene_id, columns=self.state.columns, rows=self.state.rows,
                         session=self.state.session, sequence=self.state.sequence,
                         pieces=list(self.inventory), cameras=[dict(id=name, calibrated=name in self.boards,
-                            error=camera.error, **self.diagnostics.get(name, {})) for name, camera in self.cameras.items()],
+                            error=camera.error, calibration_status=self.calibration_status.get(name, ""), **self.diagnostics.get(name, {})) for name, camera in self.cameras.items()],
                         confirmed={k: list(v) for k, v in self.pipeline.state.confirmed.items()},
                         history=list(self.history), diagnostics=dict(self.diagnostics))
 
@@ -70,6 +74,7 @@ class Runtime:
                 self.pipeline.reset()
             elif action == "start":
                 if self.mode == "camera":
+                    self._restore_calibrations()
                     if not self.cameras or set(self.cameras) != set(self.boards) or self.detector is None:
                         raise ValueError("Open cameras, calibrate each view, and load custom weights first")
                 self.error = ""
@@ -114,19 +119,66 @@ class Runtime:
             self.cameras.clear()
             self.boards.clear()
             self.previews.clear()
+            self.identities.clear()
+            self.calibration_status.clear()
+            self.restore_pending.clear()
             self.diagnostics.clear()
             try:
                 for index, config in enumerate(cameras):
-                    self.cameras[str(index)] = Camera(config["source"], 1280, 720)
+                    name = str(index)
+                    from .camera_identity import camera_identity
+                    before = camera_identity(config["source"])
+                    self.cameras[name] = Camera(config["source"], 1280, 720)
+                    after = camera_identity(config["source"])
+                    self.identities[name] = before if before == after and getattr(self.cameras[name], "identity_verified", False) else None
+                    self.restore_pending.add(name)
+                    self.calibration_status[name] = "Waiting for a fresh frame to check saved calibration."
+                # An ambiguous physical identity cannot safely select a record.
+                identities = list(self.identities.values())
+                for name, identity in self.identities.items():
+                    if identity is not None and identities.count(identity) > 1:
+                        self.identities[name] = None
             except Exception:
                 for camera in self.cameras.values():
                     camera.close()
                 self.cameras.clear()
+                self.restore_pending.clear()
                 raise
             if self.worker is None:
                 self.worker = threading.Thread(target=self._loop, daemon=True)
                 self.worker.start()
         return self.status()
+
+    def _restore_calibrations(self):
+        for name, board in list(self.boards.items()):
+            snapshot = self.cameras[name].snapshot()
+            if snapshot is not None and time.monotonic() - snapshot[2] <= 1:
+                frame = snapshot[0]
+                if board.image_size != (frame.shape[1], frame.shape[0]):
+                    del self.boards[name]
+                    self.previews.pop(name, None)
+                    self.running = False
+                    self.pipeline.reset()
+                    self.calibration_status[name] = "Camera resolution changed; freeze a frame and recalibrate."
+        if not self.restore_pending:
+            return
+        from .calibration_store import restore
+        for name in list(self.restore_pending):
+            identity = self.identities.get(name)
+            if identity is None:
+                self.calibration_status[name] = "Stable camera identity unavailable; freeze a frame and recalibrate. Calibration is session-only."
+                self.restore_pending.remove(name)
+                continue
+            snapshot = self.cameras[name].snapshot()
+            if snapshot is None or time.monotonic() - snapshot[2] > 1:
+                continue
+            frame = snapshot[0]
+            board, message = restore(self.directory, identity, self.state.columns, self.state.rows,
+                                     (frame.shape[1], frame.shape[0]))
+            if board is not None:
+                self.boards[name] = board
+            self.calibration_status[name] = message
+            self.restore_pending.remove(name)
 
     def frame(self, camera_id, freeze=False):
         import cv2
@@ -134,6 +186,7 @@ class Runtime:
             camera = self.cameras.get(camera_id)
             if camera is None:
                 raise ValueError("Open this camera first")
+            self._restore_calibrations()
             snapshot = camera.snapshot()
             if snapshot is None:
                 raise ValueError("Camera has not delivered a frame")
@@ -168,8 +221,14 @@ class Runtime:
                                                  (frame.shape[1], frame.shape[0]))
             self.running = False
             self.pipeline.reset()
+            identity = self.identities.get(name)
+            if identity is not None:
+                from .calibration_store import save
+                save(self.directory, identity, calibrated)
             self.boards[name] = calibrated
-            calibrated.save(self.directory / ("calibration-" + name + ".json"))
+            self.restore_pending.discard(name)
+            self.calibration_status[name] = ("Saved calibration; verify unused intersections." if identity is not None else
+                "Calibrated for this session only: stable camera identity unavailable. Recalibrate after reopening.")
             return {"residual_cells": calibrated.residual_cells, "image_size": calibrated.image_size}
 
     def load_weights(self, data):
@@ -213,7 +272,10 @@ class Runtime:
                             continue
                         board = self.boards[name]
                         if board.image_size != (frame.shape[1], frame.shape[0]):
-                            raise ValueError("Camera resolution changed; freeze a frame and recalibrate")
+                            del self.boards[name]
+                            self.previews.pop(name, None)
+                            self.calibration_status[name] = "Camera resolution changed; freeze a frame and recalibrate."
+                            raise ValueError(self.calibration_status[name])
                         started = time.monotonic()
                         for observation in self.detector.detect(frame):
                             x, y = board.project(observation.x, observation.y)
