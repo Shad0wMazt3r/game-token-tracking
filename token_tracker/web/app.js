@@ -35,7 +35,7 @@ function render() {
   if (sig !== signature) { signature = sig; renderBoard(); }
   const rows = s.history.map(e => { const tr = node('tr'); [e.piece_id, e.column + ', ' + e.row, e.source, 'Bridge accepted', '#' + e.sequence].forEach((v,i) => tr.append(node('td',v,i===3?'delivery':''))); return tr; });
   if (rows.length) $('history').replaceChildren(...rows); else { const tr=node('tr'),td=node('td','No movements yet. Start simulation and place a piece.','empty');td.colSpan=5;tr.append(td);$('history').replaceChildren(tr); }
-  $('camera-diagnostics').textContent = s.cameras.map(c => 'Camera '+(Number(c.id)+1)+' · '+(c.calibrated?'calibrated':'needs calibration')+(c.age_ms!==undefined?' · frame age '+c.age_ms+' ms':'')+(c.inference_ms!==undefined?' · inference '+c.inference_ms+' ms':'')+(c.error?' · '+c.error:'')).join('\n') + (s.diagnostics.fusion ? '\nUsable: '+s.diagnostics.fusion.usable+' · Ambiguous: '+(s.diagnostics.fusion.ambiguous.join(', ')||'none') : '');
+  $('camera-diagnostics').textContent = s.cameras.map(c => 'Camera '+(Number(c.id)+1)+' · '+(c.calibrated?'calibrated':'needs calibration')+(c.age_ms!==undefined?' · frame age '+c.age_ms+' ms':'')+(c.inference_ms!==undefined?' · inference '+c.inference_ms+' ms':'')+(c.calibration_status?' · '+c.calibration_status:'')+(c.error?' · '+c.error:'')).join('\n') + (s.diagnostics.fusion ? '\nUsable: '+s.diagnostics.fusion.usable+' · Ambiguous: '+(s.diagnostics.fusion.ambiguous.join(', ')||'none') : '');
 }
 function token(piece) { const index=status.pieces.indexOf(piece), t=node('span',String(index+1),'token color-'+index%3); t.title=piece; return t; }
 function renderBoard() {

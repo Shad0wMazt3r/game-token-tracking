@@ -11,6 +11,8 @@ class Camera:
         if not self.capture.isOpened():
             self.capture.release()
             raise RuntimeError("Cannot open webcam "+str(source))
+        # sysfs indices describe V4L2 only; other backends cannot use that identity.
+        self.identity_verified = self.capture.getBackendName() == "V4L2"
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH,width)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT,height)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE,1)
