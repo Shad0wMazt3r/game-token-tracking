@@ -38,6 +38,7 @@ Open the printed URL. To connect Foundry, use its real scene ID and exact browse
 
 | Goal | Guide |
 |---|---|
+| Start from public miniature images and existing boxes | [DnD dataset pilot](docs/dnd-dataset.md) |
 | Operate the dashboard, simulate moves, and replay failures | [Dashboard guide](docs/dashboard.md) |
 | Understand components, geometry, and design decisions | [Architecture](docs/architecture.md) |
 | Prove token movement before training | [Foundry setup](docs/foundry-setup.md) |

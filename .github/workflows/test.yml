@@ -28,6 +28,9 @@ jobs:
       - run: python -m token_tracker.cli --help
       - run: python -m token_tracker.session --help
       - run: python -m token_tracker.dataset --help
+      - run: python -m token_tracker.external_dataset --help
+      - run: bash -n scripts/train-nova.sbatch
+        if: runner.os == 'Linux'
       - run: python -m token_tracker.dashboard --help
       - run: python -m token_tracker.replay examples/replay.jsonl --columns 12 --rows 8
       - run: python -m playwright install --with-deps chromium
