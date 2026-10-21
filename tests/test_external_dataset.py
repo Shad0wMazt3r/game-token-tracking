@@ -134,6 +134,17 @@ class ExternalDatasetTests(unittest.TestCase):
         report, _ = inspect_export(self.source)
         self.assertEqual(report["images_with_repeated_class"]["train"], 1)
 
+    def test_reused_filenames_for_different_classes_are_not_source_leakage(self):
+        for split, suffix, class_id in (("train", "aaa", 0), ("valid", "bbb", 1)):
+            name = "0_jpg.rf." + suffix
+            (self.source / split / "images/frame.png").rename(self.source / split / "images" / (name+".png"))
+            (self.source / split / "labels/frame.txt").unlink()
+            (self.source / split / "labels" / (name+".txt")).write_text(str(class_id)+" .5 .5 1 1")
+        report, _ = inspect_export(self.source)
+        self.assertEqual(report["cross_split_source_groups"], [])
+        self.assertEqual(report["full_frame_box_images"], 2)
+        self.imported()
+
     def test_tampered_images_and_box_edits_fail_prepare(self):
         manifest = self.imported()
         self.review_all(manifest)

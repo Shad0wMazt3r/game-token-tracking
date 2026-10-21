@@ -8,7 +8,9 @@ This workflow adapts a **YOLO object-detection export** to our one-base-keypoint
 
 Candidate: [DnD Minis by DnD on Roboflow Universe](https://universe.roboflow.com/dnd-uz8oh/dnd-minis-iaduc). The project page lists six classes, about 1,100 project images and CC BY 4.0. Individual dataset versions have different image counts. This is a candidate, not a verified match to unmounted webcam geometry.
 
-The integration is tested with generated image files and representative YOLO export fixtures. The actual DnD archive has not been downloaded, audited, labeled, or trained in this work. Download access may require a Roboflow account. No hosted model API or API key is needed by the local importer.
+The integration is tested with generated image files and representative YOLO export fixtures. Version 5 has now been audited locally: 1,032 labeled images (749 train / 191 validation / 92 test), five classes, one labeled mini per image, and 1,022 full-frame boxes. No invalid boxes, missing labels or cross-split byte-identical images were found. Matching numeric filenames occur across different classes and are not treated as shared-source evidence. A class-aware filename check found no cross-split families. Similar-looking adjacent frames remain a concern; neither check establishes session independence.
+
+Visual samples are tightly cropped individual minis, with colored bases on a simple background. This is useful as a recognition/appearance pilot for those five pieces, but weak evidence for detecting small minis in full tabletop scenes. No base keypoints have been added and no model has been trained on the archive. Download access may require a Roboflow account. No hosted model API or API key is needed by the local importer.
 
 ## 1. Download a detection export
 

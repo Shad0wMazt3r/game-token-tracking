@@ -105,14 +105,16 @@ def inspect_export(root):
                     verified.verify()
                 digest = hashlib.sha256(image.read_bytes()).hexdigest()
                 hashes[digest].add(split)
-                # Roboflow augmentation exports commonly retain the original prefix.
-                if ".rf." in image.name:
-                    groups[image.name.split(".rf.")[0]].add(split)
                 counts[split] += 1
                 if not label.is_file():
                     missing[split] += 1
                     continue  # Never turn missing labels into negative examples.
                 boxes = [parse_box(line, len(names)) for line in label.read_text(encoding="utf-8").splitlines() if line.strip()]
+                # Numeric filenames are often reused for different piece classes.
+                # A matching filename alone is not evidence of a shared source.
+                if ".rf." in image.name:
+                    signature = tuple(sorted(box[0] for box in boxes))
+                    groups[(image.name.split(".rf.")[0], signature)].add(split)
                 classes = Counter(box[0] for box in boxes)
                 repeated[split] += int(any(n > 1 for n in classes.values()))
                 for box in boxes:
@@ -124,15 +126,20 @@ def inspect_export(root):
     if not counts:
         raise ValueError("No supported images found. Use train/images, valid/images, test/images or images/train layouts")
     byte_leaks = [digest for digest, splits in hashes.items() if len(splits) > 1]
-    source_leaks = [name for name, splits in groups.items() if len(splits) > 1]
+    source_leaks = sorted({name for (name, signature), splits in groups.items() if len(splits) > 1})
+    full_frame = sum(bool(row["boxes"]) and all(box[1:] == [.5, .5, 1., 1.] for box in row["boxes"]) for row in records)
     report = dict(names=names, images=dict(counts), missing_labels=dict(missing), labeled_images=len(records),
                   objects=dict(objects), images_with_repeated_class=dict(repeated), invalid_files=issues,
                   cross_split_duplicate_hashes=byte_leaks, cross_split_source_groups=source_leaks,
+                  single_object_images=sum(len(row["boxes"]) == 1 for row in records),
+                  full_frame_box_images=full_frame,
                   split_provenance="Provider splits; independence by recording session has not been established",
                   warnings=["Bounding boxes do not supply board-plane base centers.",
                             "Classes are source identities/types, not automatically your future physical pieces.",
                             "Repeated classes in one frame are withheld by the current fixed-identity runtime.",
                             "Different bytes or filenames do not rule out near-duplicate frames or session leakage."])
+    if records and full_frame / len(records) > .9:
+        report["warnings"].append("Over 90% of labeled images have full-frame boxes; inspect for cropped recognition data rather than scene detection examples.")
     return report, records
 
 
@@ -319,7 +326,8 @@ def prepare(root, destination):
         hashes[digest].add(item["split"])
         original = Path(item["original_image"]).name
         if ".rf." in original:
-            source_groups[original.split(".rf.")[0]].add(item["split"])
+            signature = tuple(sorted(int(box[0]) for box in boxes))
+            source_groups[(original.split(".rf.")[0], signature)].add(item["split"])
         plans.append((item, image, label))
         images[item["split"]] += 1
     if any(len(splits) > 1 for splits in list(hashes.values()) + list(source_groups.values())):
